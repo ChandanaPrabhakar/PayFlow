@@ -12,4 +12,5 @@ export const env = {
   STRIPE_SECRET_KEY: requiredEnv("STRIPE_SECRET_KEY"),
   STRIPE_WEBHOOK_SECRET: requiredEnv("STRIPE_WEBHOOK_SECRET"),
   DATABASE_URI: requiredEnv("DATABASE_URI"),
+  REDIS_HOST: requiredEnv("REDIS_HOST"),
 };
