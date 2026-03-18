@@ -1,17 +1,17 @@
-import prisma from "./config/db.ts";
+import express from "express";
+import type { Request, Response } from "express";
+import "dotenv/config";
+import userRouter from "./modules/user/user.router.ts";
+import { errorHandler } from "./middlewares/error.middleware.ts";
 
-async function testDB() {
-  try {
-    await prisma.$connect();
-    console.log("DB Connected Successfully");
+const app = express();
+const port = process.env.PORT || 8080;
 
-    const result = await prisma.$queryRaw`SELECT 1`;
-    console.log("Query Result:", result);
-  } catch (error) {
-    console.error("DB Connection Failed:", error);
-  } finally {
-    await prisma.$disconnect();
-  }
-}
+// Middleware
+app.use(express.json());
+app.use("/api/user", userRouter);
+app.use(errorHandler);
 
-testDB();
+app.listen(port, () => {
+  console.log(`Server ready at http://localhost:${port}`);
+});
