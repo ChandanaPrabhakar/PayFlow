@@ -34,11 +34,16 @@ export class TransactionRepository {
     stripeEventId: string,
   ): Promise<Transaction | null> {
     const tx = await prisma.transaction.findUnique({ where: { id } });
+
     if (!tx) {
       console.warn("Transaction not found, will retry:", id);
       return null;
     }
-    if (tx.status === "SUCCEEDED") return tx;
+
+    if (tx.status === "SUCCEEDED" && tx.stripeEventId === stripeEventId) {
+      return tx;
+    }
+
     return prisma.transaction.update({
       where: { id },
       data: { status, stripeEventId },

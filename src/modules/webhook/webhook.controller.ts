@@ -32,7 +32,7 @@ export const handleWebhook = async (req: Request, res: Response) => {
   await webhookEventRepository.createEvent({
     id: event.id,
     type: event.type,
-    payload: event.data.object,
+    payload: event,
   });
 
   return res.json({ received: true });

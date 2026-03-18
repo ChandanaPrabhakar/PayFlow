@@ -11,7 +11,9 @@ export class WebhookProcessor {
 
     switch (event.type) {
       case "payment_intent.succeeded": {
-        const pi = event.payload;
+        const pi = event.payload?.data?.object;
+
+        console.log("Webhook PI ID:", pi.id);
 
         const tx = await transactionRepository.findById(pi.id);
 
@@ -20,22 +22,20 @@ export class WebhookProcessor {
           return;
         }
 
-        if (tx.status === "SUCCEEDED") {
-          console.log("Already processed transaction:", pi.id);
-          await webhookEventRepository.markProcess(event.id);
-          return;
-        }
+        console.log("Before update:", tx);
 
         await transactionRepository.paymentStatus(pi.id, "SUCCEEDED", event.id);
 
-        console.log("Transaction marked SUCCEEDED:", pi.id);
+        const updated = await transactionRepository.findById(pi.id);
+
+        console.log("After update:", updated);
 
         await webhookEventRepository.markProcess(event.id);
         break;
       }
 
       case "payment_intent.payment_failed": {
-        const pi = event.payload;
+        const pi = event.payload?.data?.object;
 
         await transactionRepository.paymentStatus(pi.id, "FAILED", event.id);
 
@@ -59,6 +59,7 @@ export class WebhookProcessor {
         await this.processEvent(event);
       } catch (err) {
         console.error("Failed processing event:", event.id);
+        console.log(err);
         // DO NOT mark processed → retry later
       }
     }
