@@ -4,12 +4,12 @@ import type { Transaction } from "@prisma/client";
 export class TransactionRepository {
   async createTransaction(data: {
     id: string;
-    userId: string;
+    userId?: string;
     amount: number;
     currency: string;
     email?: string;
     status: string;
-    stripeEventId: string;
+    stripeEventId?: string;
   }): Promise<Transaction> {
     return prisma.transaction.create({
       data: {
@@ -18,7 +18,7 @@ export class TransactionRepository {
         currency: data.currency,
         status: data.status,
         email: data.email,
-        stripeEventId: data.stripeEventId,
+        stripeEventId: data.stripeEventId ?? null,
         ...(data.userId && {
           user: {
             connect: { id: data.userId },
@@ -33,6 +33,12 @@ export class TransactionRepository {
     status: string,
     stripeEventId: string,
   ): Promise<Transaction | null> {
+    const tx = await prisma.transaction.findUnique({ where: { id } });
+    if (!tx) {
+      console.warn("Transaction not found, will retry:", id);
+      return null;
+    }
+    if (tx.status === "SUCCEEDED") return tx;
     return prisma.transaction.update({
       where: { id },
       data: { status, stripeEventId },

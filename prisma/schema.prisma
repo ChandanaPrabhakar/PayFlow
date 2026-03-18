@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
+  // output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -15,7 +15,7 @@ model Transaction {
   currency      String
   email         String?
   status        String
-  stripeEventId String   @unique //Webhook level idempotency
+  stripeEventId String?  @unique //Webhook level idempotency
   createdAt     DateTime @default(now())
   user          User?    @relation(fields: [userId], references: [id])
   receipt       Receipt?
