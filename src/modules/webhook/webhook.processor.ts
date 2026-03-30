@@ -1,6 +1,10 @@
-// src/modules/webhook/webhook.processor.ts
 import { WebhookEventRepository } from "./webhook.repository.ts";
 import { TransactionRepository } from "../transaction/transaction.repository.ts";
+import { ReceiptRepository } from "../receipt/receipt.repository.ts";
+import { generateReceiptPDF } from "../../utils/pdf.ts";
+import { sendReceiptEmail } from "../../utils/email.ts";
+
+const receiptRepository = new ReceiptRepository();
 
 const webhookEventRepository = new WebhookEventRepository();
 const transactionRepository = new TransactionRepository();
@@ -11,24 +15,39 @@ export class WebhookProcessor {
 
     switch (event.type) {
       case "payment_intent.succeeded": {
-        const pi = event.payload?.data?.object;
-
-        console.log("Webhook PI ID:", pi.id);
+        const pi = event.payload.data.object;
 
         const tx = await transactionRepository.findById(pi.id);
 
         if (!tx) {
-          console.warn("Transaction not found, will retry:", pi.id);
+          await webhookEventRepository.markProcess(event.id);
           return;
         }
 
-        console.log("Before update:", tx);
+        if (tx.status === "SUCCEEDED") {
+          await webhookEventRepository.markProcess(event.id);
+          return;
+        }
 
         await transactionRepository.paymentStatus(pi.id, "SUCCEEDED", event.id);
 
-        const updated = await transactionRepository.findById(pi.id);
+        const filePath = await generateReceiptPDF({
+          transactionId: tx.id,
+          amount: tx.amount,
+          currency: tx.currency,
+          email: tx.email!,
+        });
 
-        console.log("After update:", updated);
+        await receiptRepository.createReceipt({
+          transactionId: tx.id,
+          url: filePath,
+          email: tx.email!,
+        });
+
+        await sendReceiptEmail({
+          email: tx.email!,
+          filePath,
+        }).catch(console.error);
 
         await webhookEventRepository.markProcess(event.id);
         break;

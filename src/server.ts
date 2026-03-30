@@ -1,5 +1,6 @@
 import express from "express";
 import "dotenv/config";
+import "./modules/webhook/webhook.worker.ts";
 import userRouter from "./modules/user/user.router.ts";
 import { errorHandler } from "./middlewares/error.middleware.ts";
 import transactionRouter from "./modules/transaction/transaction.router.ts";
